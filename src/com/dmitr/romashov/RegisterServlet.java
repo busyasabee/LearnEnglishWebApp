@@ -25,67 +25,52 @@ public class RegisterServlet extends HttpServlet {
         String role = "";
         int roleId = 0;
 
-        if (login.equals("admin") && password.equals("admin")){
+        if (login.equals("admin") && password.equals("admin")) {
             role = "admin";
-        }
-        else {
+        } else {
             role = "user";
         }
 
         ServletContext servletContext = getServletContext();
         Connection connection = (Connection) servletContext.getAttribute("dbConnection");
-//        try {
-//            Class.forName("org.postgresql.Driver");
-//        } catch (ClassNotFoundException e) {
-//            e.printStackTrace();
-//        }
-//        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/LearningEnglish",
-//                "postgres", "123");) {
 
-            try (PreparedStatement findRoleIdStatement = connection.prepareStatement("SELECT id FROM role WHERE role.rolename = ?  ");){
-                findRoleIdStatement.setString(1, role);
-                try(ResultSet resultSet = findRoleIdStatement.executeQuery();) {
-                    resultSet.next();
-                    roleId = resultSet.getInt("id");
-                }
-
-            } catch (SQLException e) {
-                e.printStackTrace();
+        try (PreparedStatement findRoleIdStatement = connection.prepareStatement("SELECT id FROM role WHERE role.rolename = ?  ");) {
+            findRoleIdStatement.setString(1, role);
+            try (ResultSet resultSet = findRoleIdStatement.executeQuery();) {
+                resultSet.next();
+                roleId = resultSet.getInt("id");
             }
 
-            // найти хэш от пароля, сгенерировать соль
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
-            StringBuilder salt = new StringBuilder();
-            int saltLength = 6;
+        // найти хэш от пароля, сгенерировать соль
 
-            for (int i = 0; i < saltLength; i++) {
-                salt.append((char) (new Random().nextInt(74) + 48));
-            }
+        StringBuilder salt = new StringBuilder();
+        int saltLength = 6;
 
-            String saltStr = salt.toString();
-            String hashPass = DigestUtils.sha1Hex(password + saltStr);
+        for (int i = 0; i < saltLength; i++) {
+            salt.append((char) (new Random().nextInt(74) + 48));
+        }
+
+        String saltStr = salt.toString();
+        String hashPass = DigestUtils.sha1Hex(password + saltStr);
 
 
-            try (PreparedStatement insertPersonStatement = connection.prepareStatement("INSERT INTO person (login, passwordhash, salt, role_id) VALUES (?, ?, ?, ?)  ");){
-                insertPersonStatement.setString(1, login);
-                insertPersonStatement.setString(2, hashPass);
-                insertPersonStatement.setString(3, saltStr);
-                insertPersonStatement.setInt(4, roleId);
-                insertPersonStatement.executeUpdate();
+        try (PreparedStatement insertPersonStatement = connection.prepareStatement("INSERT INTO person (login, passwordhash, salt, role_id) VALUES (?, ?, ?, ?)  ");) {
+            insertPersonStatement.setString(1, login);
+            insertPersonStatement.setString(2, hashPass);
+            insertPersonStatement.setString(3, saltStr);
+            insertPersonStatement.setInt(4, roleId);
+            insertPersonStatement.executeUpdate();
 
-            }
-            catch (Exception e){
-                e.printStackTrace();
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-            //servletContext.setAttribute("dbConnection", connection);
-
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//        }
 
         servletContext.setAttribute("login", login);
-
 
 
         Cookie cookieLogin = new Cookie("login", login);
