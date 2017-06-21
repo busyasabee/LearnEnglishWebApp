@@ -62,6 +62,7 @@ public class LoginServlet extends HttpServlet {
             response.addCookie(cookieLogin);
             response.addCookie(cookiePassword);
             session.setAttribute("isLogged", isLogged);
+            request.setAttribute("login", login);
             response.sendRedirect("/index.jsp");
 
         }

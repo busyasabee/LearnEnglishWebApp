@@ -10,6 +10,7 @@
         <element id="directory" name="lib">
           <element id="library" level="project" name="org.eclipse.ecf:org.apache.commons.codec:1.9.0.v20170208-1614" />
           <element id="library" level="project" name="postgresql-42.0.0" />
+          <element id="library" level="project" name="jstl-1.2" />
         </element>
       </element>
     </root>
