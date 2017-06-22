@@ -54,7 +54,25 @@ public class AddWordServlet extends HttpServlet {
         boolean wordAdded = false;
 
         Person person = (Person)session.getAttribute("person");
-        personId = person.getPerson_id();
+        if (person != null){
+            personId = person.getPerson_id();
+        }
+        else {
+            try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
+                    "WHERE login = ? ")) {
+
+                getPersonIdStatement.setString(1, login);
+                try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
+                    while ( resultSet.next()){
+                        personId = resultSet.getInt(1);
+                    }
+
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
 
         // так нельзя определять, так как в loginWordsMap может не быть всех слов
         out:

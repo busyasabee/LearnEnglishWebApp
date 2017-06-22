@@ -12,6 +12,9 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -25,63 +28,235 @@ public class LearnWordsServlet extends HttpServlet {
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-        String answer = request.getParameter("answer");
-        if(answer.equals("a2")){
-            wordMemory+=1;
-        }
         HttpSession session = request.getSession();
-        session.setAttribute("wordMemory", wordMemory);
-        response.sendRedirect("/words.jsp");
+        request.setCharacterEncoding("UTF-8");
+        ServletContext servletContext = getServletContext();
+        Connection connection = (Connection) servletContext.getAttribute("dbConnection");
+        int taskNumber = 0;
+        int wordNumber = 0;
+        int numberTrainingWords = 5;
+        List<Word> trainingWords = new ArrayList<>();
+        int personId = 0;
+        int wordId = 0;
+
+        taskNumber = (int) session.getAttribute("taskNumber");
+        wordNumber = (int) session.getAttribute("wordNumber");
+        trainingWords = (List<Word>) session.getAttribute("words");
+        Word trainingWord = trainingWords.get(wordNumber);
+        String rightAnswer = "";
+        String login = (String)session.getAttribute("login");
+
+        switch (taskNumber){
+            case 0:
+                rightAnswer = trainingWord.getRussianName();
+                break;
+            case 1:
+                rightAnswer = trainingWord.getEnglishName();
+                break;
+        }
+
+        String answer = request.getParameter("answer");
+
+        if (rightAnswer.equals(answer)) {
+            trainingWord.setKnowledge(trainingWord.getKnowledge() + 1); // интересно, изменится ли в мапе?
+            Person person = (Person)session.getAttribute("person");
+            if (person != null){
+                personId = person.getPerson_id();
+            }
+            else {
+                try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
+                        "WHERE login = ? ")) {
+
+                    getPersonIdStatement.setString(1, login);
+                    try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
+                        while ( resultSet.next()){
+                            personId = resultSet.getInt(1);
+                        }
+
+                    }
+
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            wordId = trainingWord.getWordId();
+            session.setAttribute("person", new Person(login,personId));
+            try (PreparedStatement insertPersonWordStatement
+                         = connection.prepareStatement("UPDATE person_word SET knowledge = ? WHERE person_id = ? and word_id = ?")) {
+
+                insertPersonWordStatement.setInt(1, trainingWord.getKnowledge());
+                insertPersonWordStatement.setInt(2, personId);
+                insertPersonWordStatement.setInt(3, wordId);
+                insertPersonWordStatement.executeUpdate();
+
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+
+        }
+
+        wordNumber += 1;
+        if (wordNumber > numberTrainingWords - 1) { // переходим к следующему заданию
+            wordNumber = 0;
+            taskNumber += 1;
+        }
+
+        session.setAttribute("wordNumber", wordNumber);
+        session.setAttribute("taskNumber", taskNumber);
+        //response.sendRedirect("/words.jsp");
+        request.getRequestDispatcher("/words.jsp").forward(request, response);
+
 
     }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-        int taskNumber = 1;
-        int wordNumber = 1;
-        List<Word> words = new ArrayList<>();
+        int taskNumber = 0;
+        int wordNumber = 0;
+        int numberTrainingWords = 5;
+        boolean firstTime = true; // надо получить слова
+        List<Word> trainingWords = new ArrayList<>();
         List<Word> allPersonWords = new ArrayList<>();
+        int allWordsCount = 0;
         Map<String, List<Word>> loginWordsMap = new HashMap<>();
         ServletContext servletContext = getServletContext();
         Connection connection = (Connection) servletContext.getAttribute("dbConnection");
         HttpSession session = request.getSession();
-        if (session.getAttribute("taskNumber")!= null){
-            taskNumber = (int)session.getAttribute("taskNumber");
+        if (session.getAttribute("taskNumber") != null) {
+            taskNumber = (int) session.getAttribute("taskNumber");
         }
-        if (session.getAttribute("wordNumber")!= null){
-            wordNumber = (int)session.getAttribute("taskNumber");
+        if (session.getAttribute("wordNumber") != null) {
+            wordNumber = (int) session.getAttribute("taskNumber");
+            wordNumber += 1;
+            if (wordNumber > 4) { // переходим к следующему заданию
+                wordNumber = 0;
+                taskNumber += 1;
+            }
+
         }
-        String login = (String)session.getAttribute("login");
+        if (session.getAttribute("words") != null) {
+            trainingWords = (ArrayList<Word>) session.getAttribute("words");
+            firstTime = false;
+        }
+        String login = (String) session.getAttribute("login");
         int personId = 0;
 
-        if (login == null){
+        if (login == null) {
             //response.sendRedirect("/.jsp");
             request.getRequestDispatcher("/login.jsp").forward(request, response);
             return;
         }
-        if(servletContext.getAttribute("loginWordsMap") != null){
-            loginWordsMap = (HashMap<String, List<Word>>)servletContext.getAttribute("loginWordsMap");
+        if (servletContext.getAttribute("loginWordsMap") != null) {
+            loginWordsMap = (HashMap<String, List<Word>>) servletContext.getAttribute("loginWordsMap");
         }
-        if(loginWordsMap.containsKey(login)){
-            // надо сделать выбор пяти самых плохо изученных слов
-            allPersonWords = loginWordsMap.get(login);
-            Collections.sort(allPersonWords);
-            request.setAttribute("words", loginWordsMap.get(login));
-            request.setAttribute("wordNumber", wordNumber);
-            request.setAttribute("taskNumber", taskNumber);
-            request.getRequestDispatcher("/dictionary.jsp").forward(request, response);
-            return;
+
+        Person person = (Person) session.getAttribute("person");
+        if (person != null) {
+            personId = person.getPerson_id();
+        } else {
+            try (PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
+                    "WHERE login = ? ")) {
+
+                getPersonIdStatement.setString(1, login);
+                try (ResultSet resultSet = getPersonIdStatement.executeQuery()) {
+                    while (resultSet.next()) {
+                        personId = resultSet.getInt(1);
+                    }
+
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
-        else {
-            // делаем sql запрос, получаем слова
+
+        try {
+            if (loginWordsMap.containsKey(login)) {
+                // надо сделать выбор пяти самых плохо изученных слов
+                allPersonWords = loginWordsMap.get(login);
+                Collections.sort(allPersonWords);
+                allWordsCount = allPersonWords.size();
+
+                if (firstTime) {
+                    if (allWordsCount < numberTrainingWords) {
+                        trainingWords = allPersonWords.subList(0, allWordsCount);
+                    } else {
+                        trainingWords = allPersonWords.subList(0, numberTrainingWords);
+                    }
+                }
+
+            } else {
+                // делаем sql запрос, получаем слова
+
+                if (firstTime) {
+                    try (PreparedStatement selectWordsStatement = connection.prepareStatement("SELECT englishname, russianname, transcription, partofspeech, knowledge, id" +
+                            " FROM word JOIN person_word on word.id = person_word.word_id WHERE person_word.person_id = ?  ORDER BY knowledge LIMIT 5");) {
+                        selectWordsStatement.setInt(1, personId);
+                        try (ResultSet resultSet = selectWordsStatement.executeQuery()) {
+                            String english;
+                            String russian;
+                            String transcription;
+                            String partOfSpeech;
+                            int knowledge;
+                            int wordId;
+                            while (resultSet.next()) {
+                                english = resultSet.getString(1);
+                                russian = resultSet.getString(2);
+                                transcription = resultSet.getString(3);
+                                partOfSpeech = resultSet.getString(4);
+                                knowledge = resultSet.getInt(5);
+                                wordId = resultSet.getInt(6);
+                                Word word = new Word(wordId, english, russian, knowledge, transcription, partOfSpeech);
+                                trainingWords.add(word);
+                            }
+                        }
+                    }
+                }
+                try (PreparedStatement selectWordsStatement = connection.prepareStatement("SELECT englishname, russianname, transcription, partofspeech, knowledge, id" +
+                        " FROM word JOIN person_word on word.id = person_word.word_id WHERE person_word.person_id = ?  ORDER BY knowledge");) {
+                    selectWordsStatement.setInt(1, personId);
+                    try (ResultSet resultSet = selectWordsStatement.executeQuery()) {
+                        String english, russian, transcription, partOfSpeech;
+                        int knowledge, wordId;
+                        while (resultSet.next()) {
+                            english = resultSet.getString(1);
+                            russian = resultSet.getString(2);
+                            transcription = resultSet.getString(3);
+                            partOfSpeech = resultSet.getString(4);
+                            knowledge = resultSet.getInt(5);
+                            wordId = resultSet.getInt(6);
+                            Word word = new Word(wordId, english, russian, knowledge, transcription, partOfSpeech);
+                            allPersonWords.add(word);
+                        }
+                    }
+                }
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        String[] variants = new String[]{"вернуть", "занять", "получить", "забрать"};
-        //response.setContentType("text/html;charset=UTF-8");
-        request.getSession().setAttribute("englishWord", "Retrieve");
-        request.getSession().setAttribute("firstVariant", "ааааааааааааааа");
-        request.getSession().setAttribute("secondVariant", "ббб");
-        request.getSession().setAttribute("thirdVariant", "вввв");
-        request.getSession().setAttribute("fourthVariant", "дддд");
+
+        // пока буду просто отдавать слова
+//        Word trainingWord;
+//        List<Word> variants = new ArrayList<>();
+//        Word answer;
+//        switch (taskNumber) {
+//            case 0:
+//                // слово на английском, вводим на русском
+//                trainingWord = trainingWords.get(wordNumber);
+//                session.setAttribute("trainingWord", trainingWord);
+//        }
+//        String[] variants = new String[]{"вернуть", "занять", "получить", "забрать"};
+//        //response.setContentType("text/html;charset=UTF-8");
+//        request.getSession().setAttribute("englishWord", "Retrieve");
+//        request.getSession().setAttribute("firstVariant", "ааааааааааааааа");
+//        request.getSession().setAttribute("secondVariant", "ббб");
+//        request.getSession().setAttribute("thirdVariant", "вввв");
+//        request.getSession().setAttribute("fourthVariant", "дддд");
+        session.setAttribute("words", trainingWords);
+        session.setAttribute("wordNumber", wordNumber);
+        session.setAttribute("taskNumber", taskNumber);
         response.sendRedirect("/words.jsp");
         //request.getRequestDispatcher("/words.jsp").forward(request, response); // так почему-то не работали русские символы
 

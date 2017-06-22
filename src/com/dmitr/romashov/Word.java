@@ -33,6 +33,15 @@ public class Word implements Comparable{
     public Word() {
     }
 
+    public Word(int wordId, String englishName, String russianName, int knowledge, String transcription, String partOfSpeech) {
+        this.wordId = wordId;
+        this.englishName = englishName;
+        this.russianName = russianName;
+        this.knowledge = knowledge;
+        this.transcription = transcription;
+        this.partOfSpeech = partOfSpeech;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -90,6 +99,6 @@ public class Word implements Comparable{
     @Override
     public int compareTo(Object o) {
         Word secondWord = (Word) o;
-        return - Integer.compare(this.knowledge, secondWord.getKnowledge());
+        return Integer.compare(this.knowledge, secondWord.getKnowledge());
     }
 }

@@ -67,22 +67,25 @@ public class DictionaryServlet extends HttpServlet {
         }
 
         Person person = (Person)session.getAttribute("person");
-        personId = person.getPerson_id();
+        if (person != null){
+            personId = person.getPerson_id();
+        }
+        else {
+            try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
+                    "WHERE login = ? ")) {
 
-//        try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
-//                "WHERE login = ? ")) {
-//
-//            getPersonIdStatement.setString(1, login);
-//            try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-//                while ( resultSet.next()){
-//                    personId = resultSet.getInt(1);
-//                }
-//
-//            }
-//
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//        }
+                getPersonIdStatement.setString(1, login);
+                try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
+                    while ( resultSet.next()){
+                        personId = resultSet.getInt(1);
+                    }
+
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
 
         try (PreparedStatement selectWordsStatement = connection.prepareStatement("SELECT englishname, russianname, transcription, partofspeech, knowledge, id" +
                 " FROM word JOIN person_word on word.id = person_word.word_id WHERE person_word.person_id = ?");) {
