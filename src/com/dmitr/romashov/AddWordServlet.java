@@ -57,49 +57,54 @@ public class AddWordServlet extends HttpServlet {
         personId = person.getPerson_id();
 
         // так нельзя определять, так как в loginWordsMap может не быть всех слов
+        out:
         for (String loginKey : loginWordsMap.keySet()) {
             personWords = loginWordsMap.get(loginKey);
 
-            if (personWords.contains(newWord)) {
-                wordExist = true;
-                break;
+            for (Word word:personWords) {
+                if (word.equals(newWord)){
+                    wordExist = true;
+                    wordId = word.getWordId();
+                    newWord.setWordId(wordId);
+                    break out;
+                }
             }
+
         }
         try {
 
             // если не нашли в мапе, то ищем в базе по всем словам
-            if (!wordExist) {
-                try (PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
-                        "WHERE login = ? ")) {
-
-                    getPersonIdStatement.setString(1, login);
-                    try (ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-                        while (resultSet.next()) {
-                            personId = resultSet.getInt(1);
-                        }
-
-                    }
-
-                }
-
-            }
-
-
+//            if (!wordExist) {
+//                try (PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
+//                        "WHERE login = ? ")) {
+//
+//                    getPersonIdStatement.setString(1, login);
+//                    try (ResultSet resultSet = getPersonIdStatement.executeQuery()) {
+//                        while (resultSet.next()) {
+//                            personId = resultSet.getInt(1);
+//                        }
+//
+//                    }
+//
+//                }
+//
+//            }
 
             if (wordExist) {
-                try (PreparedStatement getWordIdStatement = connection.prepareStatement("SELECT word.id from word " +
-                        "WHERE englishname = ? AND russianname = ?")) {
-
-                    getWordIdStatement.setString(1, englishName);
-                    getWordIdStatement.setString(2, russianName);
-                    try (ResultSet resultSet = getWordIdStatement.executeQuery()) {
-                        while (resultSet.next()) {
-                            wordId = resultSet.getInt(1);
-                        }
-
-                    }
-
-                }
+//                try (PreparedStatement getWordIdStatement = connection.prepareStatement("SELECT word.id from word " +
+//                        "WHERE englishname = ? AND russianname = ?")) {
+//
+//                    getWordIdStatement.setString(1, englishName);
+//                    getWordIdStatement.setString(2, russianName);
+//                    try (ResultSet resultSet = getWordIdStatement.executeQuery()) {
+//                        while (resultSet.next()) {
+//                            wordId = resultSet.getInt(1);
+//                        }
+//
+//                    }
+//
+//                }
+                personWords = loginWordsMap.get(login);
                 personWords.add(newWord);
 
             } else {
@@ -117,6 +122,7 @@ public class AddWordServlet extends HttpServlet {
 
                         resultSet.next();
                         wordId = resultSet.getInt("id");
+                        newWord.setWordId(wordId);
                     }
 
                 }
@@ -125,12 +131,14 @@ public class AddWordServlet extends HttpServlet {
                 personWords.add(newWord);
 
             }
+
             try (PreparedStatement insertPersonWordStatement
-                         = connection.prepareStatement("INSERT INTO person_word(person_id, word_id) VALUES " +
-                    "(?,?)")) {
+                         = connection.prepareStatement("INSERT INTO person_word(person_id, word_id, knowledge) VALUES " +
+                    "(?,?,?)")) {
 
                 insertPersonWordStatement.setInt(1, personId);
                 insertPersonWordStatement.setInt(2, wordId);
+                insertPersonWordStatement.setInt(3, knowledge);
                 insertPersonWordStatement.executeUpdate();
 
             }
