@@ -2,10 +2,7 @@ package com.dmitr.romashov;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.*;
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -27,10 +24,13 @@ public class LogoutServlet extends HttpServlet {
 
         Cookie cookieLogin = new Cookie("login", "");
         Cookie cookiePassword = new Cookie("password", "");
+        HttpSession session = request.getSession();
+        session.setAttribute("login", null);
         cookieLogin.setMaxAge(0);
         cookiePassword.setMaxAge(0);
         response.addCookie(cookieLogin);
         response.addCookie(cookiePassword);
+        //request.setAttribute("errorHappen", "yes");
 
 //        PrintWriter out = response.getWriter();
 //        out.println("<HTML>");
@@ -42,7 +42,8 @@ public class LogoutServlet extends HttpServlet {
 //        out.println("</BODY>");
 //        out.println("</HTML>");
 
-        response.sendRedirect("/index.jsp");
+        //response.sendRedirect("/login.jsp");
+        request.getRequestDispatcher("/login.jsp").forward(request, response);
 
     }
 }

@@ -5,19 +5,29 @@ import java.util.Objects;
 /**
  * Created by Дмитрий on 11.06.2017.
  */
-public class Word {
+public class Word implements Comparable{
     // не знаю, можно ли будет получить не public поля из jsp
+    private int wordId;
     private String englishName;
     private String russianName;
     private int knowledge;
     private String transcription;
     private String partOfSpeech;
 
-    public Word(String englishName, String russianName, String transcription, String partOfSpeech) {
+    public int getWordId() {
+        return wordId;
+    }
+
+    public void setWordId(int wordId) {
+        this.wordId = wordId;
+    }
+
+    public Word(String englishName, String russianName, String transcription, String partOfSpeech, int knowledge) {
         this.englishName = englishName;
         this.russianName = russianName;
         this.transcription = transcription;
         this.partOfSpeech = partOfSpeech;
+        this.knowledge = knowledge;
     }
 
     public Word() {
@@ -75,5 +85,11 @@ public class Word {
 
     public void setTranscription(String transcription) {
         this.transcription = transcription;
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        Word secondWord = (Word) o;
+        return - Integer.compare(this.knowledge, secondWord.getKnowledge());
     }
 }

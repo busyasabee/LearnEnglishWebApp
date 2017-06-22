@@ -11,6 +11,11 @@ public class Person {
     private int role_id;
     private String role;
 
+    public Person(String login, int person_id) {
+        this.login = login;
+        this.person_id = person_id;
+    }
+
     public String getLogin() {
         return login;
     }

@@ -41,13 +41,14 @@ public class DictionaryServlet extends HttpServlet {
 //        w.setKnowledge(5);
 //        words.add(w);
         ServletContext servletContext = getServletContext();
+        Connection connection = (Connection) servletContext.getAttribute("dbConnection");
+        HttpSession session = request.getSession();
         if(servletContext.getAttribute("loginWordsMap") != null){
             loginWordsMap = (HashMap<String, List<Word>>)servletContext.getAttribute("loginWordsMap");
             // может надо приводить к Map?
 
         }
-        Connection connection = (Connection) servletContext.getAttribute("dbConnection");
-        HttpSession session = request.getSession();
+
         //String login = request.getParameter("login");
         String login = (String)session.getAttribute("login");
         int personId = 0;
@@ -63,31 +64,18 @@ public class DictionaryServlet extends HttpServlet {
             //request.setAttribute("login", login);
             request.getRequestDispatcher("/dictionary.jsp").forward(request, response);
             return;
-
         }
 
-        try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
-                "WHERE login = ? ")) {
+        Person person = (Person)session.getAttribute("person");
+        personId = person.getPerson_id();
 
-            getPersonIdStatement.setString(1, login);
-            try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-                while ( resultSet.next()){
-                    personId = resultSet.getInt(1);
-                }
-
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-//        try(PreparedStatement getWordsIdStatement = connection.prepareStatement("SELECT word_id from person_word " +
-//                "WHERE person_id = ? ")) {
+//        try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
+//                "WHERE login = ? ")) {
 //
-//            getWordsIdStatement.setInt(1, personId);
-//            try(ResultSet resultSet = getWordsIdStatement.executeQuery()) {
+//            getPersonIdStatement.setString(1, login);
+//            try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
 //                while ( resultSet.next()){
-//                    wordsId.add(resultSet.getInt(1));
+//                    personId = resultSet.getInt(1);
 //                }
 //
 //            }
@@ -96,7 +84,7 @@ public class DictionaryServlet extends HttpServlet {
 //            e.printStackTrace();
 //        }
 
-        try (PreparedStatement selectWordsStatement = connection.prepareStatement("SELECT englishname, russianname, transcription, partofspeech, knowledge" +
+        try (PreparedStatement selectWordsStatement = connection.prepareStatement("SELECT englishname, russianname, transcription, partofspeech, knowledge, id" +
                 " FROM word JOIN person_word on word.id = person_word.word_id WHERE person_word.person_id = ?");) {
             selectWordsStatement.setInt(1, personId);
             try (ResultSet resultSet = selectWordsStatement.executeQuery()) {
@@ -105,18 +93,21 @@ public class DictionaryServlet extends HttpServlet {
                 String transcription;
                 String partOfSpeech;
                 int knowledge;
+                int wordId;
                 while (resultSet.next()){
                     english = resultSet.getString(1);
                     russian = resultSet.getString(2);// idea offer me use NString but he is not realized
                     transcription = resultSet.getString(3);
                     partOfSpeech = resultSet.getString(4);
                     knowledge = resultSet.getInt(5);
+                    wordId = resultSet.getInt(6);
                     Word word = new Word();
                     word.setEnglishName(english);
                     word.setRussianName(russian);
                     word.setTranscription(transcription);
                     word.setPartOfSpeech(partOfSpeech);
                     word.setKnowledge(knowledge);
+                    word.setWordId(wordId);
                     words.add(word);
                 }
             }

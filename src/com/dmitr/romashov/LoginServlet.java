@@ -32,11 +32,14 @@ public class LoginServlet extends HttpServlet {
         String saltFromDb = "";
         String hashPass = "";
         boolean isLogged = true;
+        int personId = 0;
 
-        try (PreparedStatement selectUserStatement = connection.prepareStatement("SELECT passwordhash, salt FROM person WHERE login = ?  ");) {
+
+        try (PreparedStatement selectUserStatement = connection.prepareStatement("SELECT id, passwordhash, salt FROM person WHERE login = ?  ");) {
             selectUserStatement.setString(1, login);
             try (ResultSet resultSet = selectUserStatement.executeQuery();) {
                 resultSet.next();
+                personId = resultSet.getInt("id");
                 passwordFromDb = resultSet.getString("passwordhash");
                 saltFromDb = resultSet.getString("salt");
 
@@ -44,9 +47,10 @@ public class LoginServlet extends HttpServlet {
 
         } catch (SQLException e) {
             e.printStackTrace();
-            isLogged = false;
-            session.setAttribute("isLogged", isLogged);
-            response.sendRedirect("/login.jsp");
+            //isLogged = false;
+            //session.setAttribute("isLogged", isLogged);
+            request.setAttribute("errorHappen", "yes");
+            request.getRequestDispatcher("/login.jsp").forward(request, response);
             return;
 
         }
@@ -54,6 +58,7 @@ public class LoginServlet extends HttpServlet {
         hashPass = DigestUtils.sha1Hex(password + saltFromDb);
 
         if (hashPass.equals(passwordFromDb)){
+            Person person = new Person(login, personId);
             Cookie cookieLogin = new Cookie("login", login);
             cookieLogin.setMaxAge(cookiesTime);
             Cookie cookiePassword = new Cookie("password", password);
@@ -61,15 +66,17 @@ public class LoginServlet extends HttpServlet {
 
             response.addCookie(cookieLogin);
             response.addCookie(cookiePassword);
-            session.setAttribute("isLogged", isLogged);
-            request.setAttribute("login", login);
-            response.sendRedirect("/index.jsp");
+            //session.setAttribute("isLogged", isLogged);
+            session.setAttribute("login", login);
+            session.setAttribute("person", person);
+            request.getRequestDispatcher("/index.jsp").forward(request, response);
 
         }
         else {
             isLogged = false;
-            session.setAttribute("isLogged", isLogged);
-            response.sendRedirect("/login.jsp");
+            //session.setAttribute("isLogged", isLogged);
+            request.setAttribute("errorHappen", "yes");
+            request.getRequestDispatcher("/login.jsp").forward(request, response);
         }
 
     }
