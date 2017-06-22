@@ -16,7 +16,6 @@ import org.apache.commons.codec.digest.DigestUtils;
  */
 @WebServlet(name = "RegisterServlet", urlPatterns = "/register")
 public class RegisterServlet extends HttpServlet {
-    int cookiesTime = 2_592_000; // month
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
@@ -69,19 +68,7 @@ public class RegisterServlet extends HttpServlet {
             e.printStackTrace();
         }
 
-
-        servletContext.setAttribute("login", login);
-
-
-        Cookie cookieLogin = new Cookie("login", login);
-        cookieLogin.setMaxAge(cookiesTime);
-        Cookie cookiePassword = new Cookie("password", password);
-        cookiePassword.setMaxAge(cookiesTime);
-
-
-        response.addCookie(cookieLogin);
-        response.addCookie(cookiePassword);
-        response.sendRedirect("/index.jsp");
+        response.sendRedirect("/login.jsp");
 
     }
 

@@ -12,10 +12,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by Дмитрий on 21.06.2017.
@@ -56,9 +53,13 @@ public class AddWordServlet extends HttpServlet {
         int wordId = 0;
         boolean wordAdded = false;
 
+        Person person = (Person)session.getAttribute("person");
+        personId = person.getPerson_id();
+
         // так нельзя определять, так как в loginWordsMap может не быть всех слов
         for (String loginKey : loginWordsMap.keySet()) {
             personWords = loginWordsMap.get(loginKey);
+
             if (personWords.contains(newWord)) {
                 wordExist = true;
                 break;
@@ -68,34 +69,23 @@ public class AddWordServlet extends HttpServlet {
 
             // если не нашли в мапе, то ищем в базе по всем словам
             if (!wordExist) {
-//                try (PreparedStatement findWordStatement = connection.prepareStatement("SELECT person.id from person " +
-//                        "WHERE login = ? ")) {
-//
-//                    getPersonIdStatement.setString(1, login);
-//                    try (ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-//                        while (resultSet.next()) {
-//                            personId = resultSet.getInt(1);
-//                        }
-//
-//                    }
-//
-//                }
+                try (PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
+                        "WHERE login = ? ")) {
 
-            }
+                    getPersonIdStatement.setString(1, login);
+                    try (ResultSet resultSet = getPersonIdStatement.executeQuery()) {
+                        while (resultSet.next()) {
+                            personId = resultSet.getInt(1);
+                        }
 
-
-            try (PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
-                    "WHERE login = ? ")) {
-
-                getPersonIdStatement.setString(1, login);
-                try (ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-                    while (resultSet.next()) {
-                        personId = resultSet.getInt(1);
                     }
 
                 }
 
             }
+
+
+
             if (wordExist) {
                 try (PreparedStatement getWordIdStatement = connection.prepareStatement("SELECT word.id from word " +
                         "WHERE englishname = ? AND russianname = ?")) {
