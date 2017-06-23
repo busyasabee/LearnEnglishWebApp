@@ -47,8 +47,6 @@ public class LoginServlet extends HttpServlet {
 
         } catch (SQLException e) {
             e.printStackTrace();
-            //isLogged = false;
-            //session.setAttribute("isLogged", isLogged);
             request.setAttribute("errorHappen", "yes");
             request.getRequestDispatcher("/login.jsp").forward(request, response);
             return;
