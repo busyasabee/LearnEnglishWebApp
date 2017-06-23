@@ -42,12 +42,12 @@ public class LearnWordsServlet extends HttpServlet {
 
         taskNumber = (int) session.getAttribute("taskNumber");
         wordNumber = (int) session.getAttribute("wordNumber");
-        trainingWords = (List<Word>) session.getAttribute("words");
+        trainingWords = (List<Word>) session.getAttribute("trainingWords");
         Word trainingWord = trainingWords.get(wordNumber);
         String rightAnswer = "";
-        String login = (String)session.getAttribute("login");
+        String login = (String) session.getAttribute("login");
 
-        switch (taskNumber){
+        switch (taskNumber) {
             case 0:
                 rightAnswer = trainingWord.getRussianName();
                 break;
@@ -60,23 +60,22 @@ public class LearnWordsServlet extends HttpServlet {
 
         Enumeration fields = request.getParameterNames();
         if (fields.hasMoreElements()) {
-            while(fields.hasMoreElements()) {
-                String field= (String)fields.nextElement();
+            while (fields.hasMoreElements()) {
+                String field = (String) fields.nextElement();
                 //String name = request.getParameter(field);
-                if (field.equals("check"))  {
+                if (field.equals("check")) {
                     if (rightAnswer.equals(answer)) {
                         trainingWord.setKnowledge(trainingWord.getKnowledge() + 1);
-                        Person person = (Person)session.getAttribute("person");
-                        if (person != null){
+                        Person person = (Person) session.getAttribute("person");
+                        if (person != null) {
                             personId = person.getPerson_id();
-                        }
-                        else {
-                            try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
+                        } else {
+                            try (PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
                                     "WHERE login = ? ")) {
 
                                 getPersonIdStatement.setString(1, login);
-                                try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-                                    while ( resultSet.next()){
+                                try (ResultSet resultSet = getPersonIdStatement.executeQuery()) {
+                                    while (resultSet.next()) {
                                         personId = resultSet.getInt(1);
                                     }
 
@@ -86,8 +85,10 @@ public class LearnWordsServlet extends HttpServlet {
                                 e.printStackTrace();
                             }
                         }
+
                         wordId = trainingWord.getWordId();
-                        session.setAttribute("person", new Person(login,personId));
+                        session.setAttribute("person", new Person(login, personId));
+
                         try (PreparedStatement insertPersonWordStatement
                                      = connection.prepareStatement("UPDATE person_word SET knowledge = ? WHERE person_id = ? and word_id = ?")) {
 
@@ -96,21 +97,18 @@ public class LearnWordsServlet extends HttpServlet {
                             insertPersonWordStatement.setInt(3, wordId);
                             insertPersonWordStatement.executeUpdate();
 
-                        }
-                        catch (Exception e){
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                         request.setAttribute("isRight", "yes");
 
-                    }
-                    else {
+                    } else {
                         request.setAttribute("isRight", "no");
                     }
 
                     request.getRequestDispatcher("/words.jsp").forward(request, response);
                     return;
-                }
-                else if(field.equals("next"))  {
+                } else if (field.equals("next")) {
                     wordNumber += 1;
                     if (wordNumber > numberTrainingWords - 1) { // переходим к следующему заданию
                         wordNumber = 0;
@@ -120,10 +118,10 @@ public class LearnWordsServlet extends HttpServlet {
                     session.setAttribute("wordNumber", wordNumber);
                     session.setAttribute("taskNumber", taskNumber);
                     //response.sendRedirect("/words.jsp");
-                    if (taskNumber >= maxTaskNumber){
-                        request.getRequestDispatcher("/index.jsp").forward(request, response);
-                    }
-                    else {
+                    if (taskNumber >= maxTaskNumber) {
+                        request.setAttribute("words", trainingWords);
+                        request.getRequestDispatcher("/wordsTrained.jsp").forward(request, response);
+                    } else {
                         request.getRequestDispatcher("/words.jsp").forward(request, response);
                     }
                     return;
@@ -159,10 +157,10 @@ public class LearnWordsServlet extends HttpServlet {
 //            }
 //
 //        }
-        if (session.getAttribute("words") != null) {
-            trainingWords = (List<Word>) session.getAttribute("words");
-            firstTime = false;
-        }
+//        if (session.getAttribute("words") != null) {
+//            trainingWords = (List<Word>) session.getAttribute("words");
+//            firstTime = false;
+//        }
         String login = (String) session.getAttribute("login");
         int personId = 0;
 
@@ -171,9 +169,10 @@ public class LearnWordsServlet extends HttpServlet {
             request.getRequestDispatcher("/login.jsp").forward(request, response);
             return;
         }
-//        if (servletContext.getAttribute("loginWordsMap") != null) {
-//            loginWordsMap = (HashMap<String, List<Word>>) servletContext.getAttribute("loginWordsMap");
-//        }
+
+        if (servletContext.getAttribute("loginWordsMap") != null) {
+            loginWordsMap = (HashMap<String, List<Word>>) servletContext.getAttribute("loginWordsMap");
+        }
 
         Person person = (Person) session.getAttribute("person");
         if (person != null) {
@@ -202,47 +201,26 @@ public class LearnWordsServlet extends HttpServlet {
                 Collections.sort(allPersonWords);
                 allWordsCount = allPersonWords.size();
 
-                if (firstTime) {
-                    if (allWordsCount < numberTrainingWords) {
-                        trainingWords = allPersonWords.subList(0, allWordsCount);
-                    } else {
-                        trainingWords = allPersonWords.subList(0, numberTrainingWords);
-                    }
+                if (allWordsCount < numberTrainingWords) {
+                    trainingWords = allPersonWords.subList(0, allWordsCount);
+                } else {
+                    trainingWords = allPersonWords.subList(0, numberTrainingWords);
                 }
+
 
             } else {
                 // делаем sql запрос, получаем слова
 
-                if (firstTime) {
-                    try (PreparedStatement selectWordsStatement = connection.prepareStatement("SELECT englishname, russianname, transcription, partofspeech, knowledge, id" +
-                            " FROM word JOIN person_word on word.id = person_word.word_id WHERE person_word.person_id = ?  ORDER BY knowledge LIMIT 5");) {
-                        selectWordsStatement.setInt(1, personId);
-                        try (ResultSet resultSet = selectWordsStatement.executeQuery()) {
-                            String english;
-                            String russian;
-                            String transcription;
-                            String partOfSpeech;
-                            int knowledge;
-                            int wordId;
-                            while (resultSet.next()) {
-                                english = resultSet.getString(1);
-                                russian = resultSet.getString(2);
-                                transcription = resultSet.getString(3);
-                                partOfSpeech = resultSet.getString(4);
-                                knowledge = resultSet.getInt(5);
-                                wordId = resultSet.getInt(6);
-                                Word word = new Word(wordId, english, russian, knowledge, transcription, partOfSpeech);
-                                trainingWords.add(word);
-                            }
-                        }
-                    }
-                }
                 try (PreparedStatement selectWordsStatement = connection.prepareStatement("SELECT englishname, russianname, transcription, partofspeech, knowledge, id" +
-                        " FROM word JOIN person_word on word.id = person_word.word_id WHERE person_word.person_id = ?  ORDER BY knowledge");) {
+                        " FROM word JOIN person_word on word.id = person_word.word_id WHERE person_word.person_id = ?  ORDER BY knowledge LIMIT 5");) {
                     selectWordsStatement.setInt(1, personId);
                     try (ResultSet resultSet = selectWordsStatement.executeQuery()) {
-                        String english, russian, transcription, partOfSpeech;
-                        int knowledge, wordId;
+                        String english;
+                        String russian;
+                        String transcription;
+                        String partOfSpeech;
+                        int knowledge;
+                        int wordId;
                         while (resultSet.next()) {
                             english = resultSet.getString(1);
                             russian = resultSet.getString(2);
@@ -251,7 +229,7 @@ public class LearnWordsServlet extends HttpServlet {
                             knowledge = resultSet.getInt(5);
                             wordId = resultSet.getInt(6);
                             Word word = new Word(wordId, english, russian, knowledge, transcription, partOfSpeech);
-                            allPersonWords.add(word);
+                            trainingWords.add(word);
                         }
                     }
                 }
@@ -261,29 +239,11 @@ public class LearnWordsServlet extends HttpServlet {
             e.printStackTrace();
         }
 
-        // пока буду просто отдавать слова
-//        Word trainingWord;
-//        List<Word> variants = new ArrayList<>();
-//        Word answer;
-//        switch (taskNumber) {
-//            case 0:
-//                // слово на английском, вводим на русском
-//                trainingWord = trainingWords.get(wordNumber);
-//                session.setAttribute("trainingWord", trainingWord);
-//        }
-//        String[] variants = new String[]{"вернуть", "занять", "получить", "забрать"};
-//        //response.setContentType("text/html;charset=UTF-8");
-//        request.getSession().setAttribute("englishWord", "Retrieve");
-//        request.getSession().setAttribute("firstVariant", "ааааааааааааааа");
-//        request.getSession().setAttribute("secondVariant", "ббб");
-//        request.getSession().setAttribute("thirdVariant", "вввв");
-//        request.getSession().setAttribute("fourthVariant", "дддд");
-        session.setAttribute("words", trainingWords);
+        session.setAttribute("trainingWords", trainingWords);
         session.setAttribute("wordNumber", wordNumber);
         session.setAttribute("taskNumber", taskNumber);
         response.sendRedirect("/words.jsp");
         //request.getRequestDispatcher("/words.jsp").forward(request, response); // так почему-то не работали русские символы
-
 
     }
 }

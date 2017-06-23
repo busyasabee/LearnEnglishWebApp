@@ -59,12 +59,20 @@ public class DictionaryServlet extends HttpServlet {
             return;
         }
 
+//        if (session.getAttribute("words") != null){
+//            words = (List<Word>) request.getAttribute("words");
+//            request.setAttribute("words", words);
+//            request.getRequestDispatcher("/dictionary.jsp").forward(request, response);
+//            return;
+//        }
+
         if(loginWordsMap.containsKey(login)){
             request.setAttribute("words", loginWordsMap.get(login));
             //request.setAttribute("login", login);
             request.getRequestDispatcher("/dictionary.jsp").forward(request, response);
             return;
         }
+
 
         Person person = (Person)session.getAttribute("person");
         if (person != null){
@@ -124,6 +132,7 @@ public class DictionaryServlet extends HttpServlet {
         servletContext.setAttribute("loginWordsMap", loginWordsMap);
 
         request.setAttribute("words", words);
+        //session.setAttribute("words", words); // у меня будет показываться одно и то же
         //request.setAttribute("login", login); // не нужен в словаре
 
         //response.sendRedirect("/dictionary.jsp");
