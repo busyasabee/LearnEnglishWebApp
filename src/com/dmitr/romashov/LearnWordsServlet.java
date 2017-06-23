@@ -38,6 +38,7 @@ public class LearnWordsServlet extends HttpServlet {
         List<Word> trainingWords = new ArrayList<>();
         int personId = 0;
         int wordId = 0;
+        int maxTaskNumber = 2;
 
         taskNumber = (int) session.getAttribute("taskNumber");
         wordNumber = (int) session.getAttribute("wordNumber");
@@ -57,56 +58,79 @@ public class LearnWordsServlet extends HttpServlet {
 
         String answer = request.getParameter("answer");
 
-        if (rightAnswer.equals(answer)) {
-            trainingWord.setKnowledge(trainingWord.getKnowledge() + 1); // интересно, изменится ли в мапе?
-            Person person = (Person)session.getAttribute("person");
-            if (person != null){
-                personId = person.getPerson_id();
-            }
-            else {
-                try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
-                        "WHERE login = ? ")) {
-
-                    getPersonIdStatement.setString(1, login);
-                    try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-                        while ( resultSet.next()){
-                            personId = resultSet.getInt(1);
+        Enumeration fields = request.getParameterNames();
+        if (fields.hasMoreElements()) {
+            while(fields.hasMoreElements()) {
+                String field= (String)fields.nextElement();
+                //String name = request.getParameter(field);
+                if (field.equals("check"))  {
+                    if (rightAnswer.equals(answer)) {
+                        trainingWord.setKnowledge(trainingWord.getKnowledge() + 1);
+                        Person person = (Person)session.getAttribute("person");
+                        if (person != null){
+                            personId = person.getPerson_id();
                         }
+                        else {
+                            try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
+                                    "WHERE login = ? ")) {
+
+                                getPersonIdStatement.setString(1, login);
+                                try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
+                                    while ( resultSet.next()){
+                                        personId = resultSet.getInt(1);
+                                    }
+
+                                }
+
+                            } catch (SQLException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        wordId = trainingWord.getWordId();
+                        session.setAttribute("person", new Person(login,personId));
+                        try (PreparedStatement insertPersonWordStatement
+                                     = connection.prepareStatement("UPDATE person_word SET knowledge = ? WHERE person_id = ? and word_id = ?")) {
+
+                            insertPersonWordStatement.setInt(1, trainingWord.getKnowledge());
+                            insertPersonWordStatement.setInt(2, personId);
+                            insertPersonWordStatement.setInt(3, wordId);
+                            insertPersonWordStatement.executeUpdate();
+
+                        }
+                        catch (Exception e){
+                            e.printStackTrace();
+                        }
+                        request.setAttribute("isRight", "yes");
 
                     }
+                    else {
+                        request.setAttribute("isRight", "no");
+                    }
 
-                } catch (SQLException e) {
-                    e.printStackTrace();
+                    request.getRequestDispatcher("/words.jsp").forward(request, response);
+                    return;
                 }
-            }
-            wordId = trainingWord.getWordId();
-            session.setAttribute("person", new Person(login,personId));
-            try (PreparedStatement insertPersonWordStatement
-                         = connection.prepareStatement("UPDATE person_word SET knowledge = ? WHERE person_id = ? and word_id = ?")) {
+                else if(field.equals("next"))  {
+                    wordNumber += 1;
+                    if (wordNumber > numberTrainingWords - 1) { // переходим к следующему заданию
+                        wordNumber = 0;
+                        taskNumber += 1;
+                    }
 
-                insertPersonWordStatement.setInt(1, trainingWord.getKnowledge());
-                insertPersonWordStatement.setInt(2, personId);
-                insertPersonWordStatement.setInt(3, wordId);
-                insertPersonWordStatement.executeUpdate();
+                    session.setAttribute("wordNumber", wordNumber);
+                    session.setAttribute("taskNumber", taskNumber);
+                    //response.sendRedirect("/words.jsp");
+                    if (taskNumber >= maxTaskNumber){
+                        request.getRequestDispatcher("/index.jsp").forward(request, response);
+                    }
+                    else {
+                        request.getRequestDispatcher("/words.jsp").forward(request, response);
+                    }
+                    return;
+                }
 
             }
-            catch (Exception e){
-                e.printStackTrace();
-            }
-
         }
-
-        wordNumber += 1;
-        if (wordNumber > numberTrainingWords - 1) { // переходим к следующему заданию
-            wordNumber = 0;
-            taskNumber += 1;
-        }
-
-        session.setAttribute("wordNumber", wordNumber);
-        session.setAttribute("taskNumber", taskNumber);
-        //response.sendRedirect("/words.jsp");
-        request.getRequestDispatcher("/words.jsp").forward(request, response);
-
 
     }
 
@@ -123,20 +147,20 @@ public class LearnWordsServlet extends HttpServlet {
         ServletContext servletContext = getServletContext();
         Connection connection = (Connection) servletContext.getAttribute("dbConnection");
         HttpSession session = request.getSession();
-        if (session.getAttribute("taskNumber") != null) {
-            taskNumber = (int) session.getAttribute("taskNumber");
-        }
-        if (session.getAttribute("wordNumber") != null) {
-            wordNumber = (int) session.getAttribute("taskNumber");
-            wordNumber += 1;
-            if (wordNumber > 4) { // переходим к следующему заданию
-                wordNumber = 0;
-                taskNumber += 1;
-            }
-
-        }
+//        if (session.getAttribute("taskNumber") != null) {
+//            taskNumber = (int) session.getAttribute("taskNumber");
+//        }
+//        if (session.getAttribute("wordNumber") != null) {
+//            wordNumber = (int) session.getAttribute("taskNumber");
+//            wordNumber += 1;
+//            if (wordNumber > 4) { // переходим к следующему заданию
+//                wordNumber = 0;
+//                taskNumber += 1;
+//            }
+//
+//        }
         if (session.getAttribute("words") != null) {
-            trainingWords = (ArrayList<Word>) session.getAttribute("words");
+            trainingWords = (List<Word>) session.getAttribute("words");
             firstTime = false;
         }
         String login = (String) session.getAttribute("login");
@@ -147,9 +171,9 @@ public class LearnWordsServlet extends HttpServlet {
             request.getRequestDispatcher("/login.jsp").forward(request, response);
             return;
         }
-        if (servletContext.getAttribute("loginWordsMap") != null) {
-            loginWordsMap = (HashMap<String, List<Word>>) servletContext.getAttribute("loginWordsMap");
-        }
+//        if (servletContext.getAttribute("loginWordsMap") != null) {
+//            loginWordsMap = (HashMap<String, List<Word>>) servletContext.getAttribute("loginWordsMap");
+//        }
 
         Person person = (Person) session.getAttribute("person");
         if (person != null) {
