@@ -34,41 +34,25 @@ public class DictionaryServlet extends HttpServlet {
         List<Integer> wordsId = new ArrayList<>();
         Map<String, List<Word>> loginWordsMap = new HashMap<>();
 
-//        Word w = new Word();
-//        w.setRussianName("a");
-//        w.setEnglishName("b");
-//        w.setTranscription("c");
-//        w.setKnowledge(5);
-//        words.add(w);
         ServletContext servletContext = getServletContext();
         Connection connection = (Connection) servletContext.getAttribute("dbConnection");
         HttpSession session = request.getSession();
         if(servletContext.getAttribute("loginWordsMap") != null){
             loginWordsMap = (HashMap<String, List<Word>>)servletContext.getAttribute("loginWordsMap");
-            // может надо приводить к Map?
 
         }
 
-        //String login = request.getParameter("login");
         String login = (String)session.getAttribute("login");
         int personId = 0;
 
         if (login == null){
-            //response.sendRedirect("/.jsp");
+
             request.getRequestDispatcher("/login.jsp").forward(request, response);
             return;
         }
 
-//        if (session.getAttribute("words") != null){
-//            words = (List<Word>) request.getAttribute("words");
-//            request.setAttribute("words", words);
-//            request.getRequestDispatcher("/dictionary.jsp").forward(request, response);
-//            return;
-//        }
-
         if(loginWordsMap.containsKey(login)){
             request.setAttribute("words", loginWordsMap.get(login));
-            //request.setAttribute("login", login);
             request.getRequestDispatcher("/dictionary.jsp").forward(request, response);
             return;
         }
@@ -107,7 +91,7 @@ public class DictionaryServlet extends HttpServlet {
                 int wordId;
                 while (resultSet.next()){
                     english = resultSet.getString(1);
-                    russian = resultSet.getString(2);// idea offer me use NString but he is not realized
+                    russian = resultSet.getString(2);
                     transcription = resultSet.getString(3);
                     partOfSpeech = resultSet.getString(4);
                     knowledge = resultSet.getInt(5);
@@ -132,10 +116,6 @@ public class DictionaryServlet extends HttpServlet {
         servletContext.setAttribute("loginWordsMap", loginWordsMap);
 
         request.setAttribute("words", words);
-        //session.setAttribute("words", words); // у меня будет показываться одно и то же
-        //request.setAttribute("login", login); // не нужен в словаре
-
-        //response.sendRedirect("/dictionary.jsp");
         request.getRequestDispatcher("/dictionary.jsp").forward(request, response);
 
     }

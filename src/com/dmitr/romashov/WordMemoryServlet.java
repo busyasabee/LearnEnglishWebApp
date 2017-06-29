@@ -29,8 +29,6 @@ public class WordMemoryServlet extends HttpServlet {
         }
         HttpSession session = request.getSession();
         session.setAttribute("wordMemory", wordMemory);
-//        PrintWriter out = response.getWriter();
-//        out.println(HTML_START + "<h2>" + answer + "</h2>" +HTML_END);
         response.sendRedirect("/words.jsp");
 
     }

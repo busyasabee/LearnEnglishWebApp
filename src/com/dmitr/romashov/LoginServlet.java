@@ -24,6 +24,7 @@ public class LoginServlet extends HttpServlet {
         HttpSession session = request.getSession();
         String login = request.getParameter("login");
         String password = request.getParameter("password");
+        String sessionId = session.getId();
 
         // подключиться к бд, проверить, есть ли такой пользователь
         ServletContext servletContext = getServletContext();
@@ -64,16 +65,13 @@ public class LoginServlet extends HttpServlet {
 
             response.addCookie(cookieLogin);
             response.addCookie(cookiePassword);
-            //session.setAttribute("isLogged", isLogged);
             session.setAttribute("login", login);
             session.setAttribute("person", person);
-            //request.getRequestDispatcher("/index.jsp").forward(request, response);
             response.sendRedirect("/index.jsp");
 
         }
         else {
             isLogged = false;
-            //session.setAttribute("isLogged", isLogged);
             request.setAttribute("errorHappen", "yes");
             request.getRequestDispatcher("/login.jsp").forward(request, response);
         }

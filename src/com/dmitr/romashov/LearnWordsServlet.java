@@ -22,8 +22,6 @@ import java.util.*;
  */
 @WebServlet("/learnwords")
 public class LearnWordsServlet extends HttpServlet {
-    public static final String HTML_START = "<html><body>";
-    public static final String HTML_END = "</body></html>";
     private static int wordMemory = 0;
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -145,27 +143,11 @@ public class LearnWordsServlet extends HttpServlet {
         ServletContext servletContext = getServletContext();
         Connection connection = (Connection) servletContext.getAttribute("dbConnection");
         HttpSession session = request.getSession();
-//        if (session.getAttribute("taskNumber") != null) {
-//            taskNumber = (int) session.getAttribute("taskNumber");
-//        }
-//        if (session.getAttribute("wordNumber") != null) {
-//            wordNumber = (int) session.getAttribute("taskNumber");
-//            wordNumber += 1;
-//            if (wordNumber > 4) { // переходим к следующему заданию
-//                wordNumber = 0;
-//                taskNumber += 1;
-//            }
-//
-//        }
-//        if (session.getAttribute("words") != null) {
-//            trainingWords = (List<Word>) session.getAttribute("words");
-//            firstTime = false;
-//        }
+
         String login = (String) session.getAttribute("login");
         int personId = 0;
 
         if (login == null) {
-            //response.sendRedirect("/.jsp");
             request.getRequestDispatcher("/login.jsp").forward(request, response);
             return;
         }
@@ -196,7 +178,7 @@ public class LearnWordsServlet extends HttpServlet {
 
         try {
             if (loginWordsMap.containsKey(login)) {
-                // надо сделать выбор пяти самых плохо изученных слов
+                // выбор пяти самых плохо изученных слов
                 allPersonWords = loginWordsMap.get(login);
                 Collections.sort(allPersonWords);
                 allWordsCount = allPersonWords.size();
@@ -243,7 +225,6 @@ public class LearnWordsServlet extends HttpServlet {
         session.setAttribute("wordNumber", wordNumber);
         session.setAttribute("taskNumber", taskNumber);
         response.sendRedirect("/words.jsp");
-        //request.getRequestDispatcher("/words.jsp").forward(request, response); // так почему-то не работали русские символы
 
     }
 }
