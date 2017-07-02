@@ -1,5 +1,6 @@
-package com.dmitr.romashov;
+package com.dmitr.romashov.servlets;
 
+import com.dmitr.romashov.Person;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import javax.servlet.ServletContext;

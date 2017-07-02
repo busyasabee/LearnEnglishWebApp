@@ -1,4 +1,7 @@
-package com.dmitr.romashov;
+package com.dmitr.romashov.servlets;
+
+import com.dmitr.romashov.Person;
+import com.dmitr.romashov.Word;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;

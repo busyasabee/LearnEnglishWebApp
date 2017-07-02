@@ -1,5 +1,7 @@
-package com.dmitr.romashov;
+package com.dmitr.romashov.servlets;
 
+import com.dmitr.romashov.Person;
+import com.dmitr.romashov.Word;
 import org.postgresql.jdbc.PgArray;
 
 import javax.servlet.ServletContext;
@@ -79,16 +81,12 @@ public class DictionaryServlet extends HttpServlet {
             }
         }
 
-        try (PreparedStatement selectWordsStatement = connection.prepareStatement("SELECT englishname, russianname, transcription, partofspeech, knowledge, id" +
+        try (PreparedStatement selectWordsStatement = connection.prepareStatement("SELECT englishname, russianname, transcription, partofspeech, knowledge, id, other_russian_name, other_transcription, other_part_of_speech" +
                 " FROM word JOIN person_word on word.id = person_word.word_id WHERE person_word.person_id = ?");) {
             selectWordsStatement.setInt(1, personId);
             try (ResultSet resultSet = selectWordsStatement.executeQuery()) {
-                String english;
-                String russian;
-                String transcription;
-                String partOfSpeech;
-                int knowledge;
-                int wordId;
+                String english, russian, transcription, partOfSpeech, otherRussian, otherTranscription, otherPartOfSpeech ;
+                int knowledge, wordId;
                 while (resultSet.next()){
                     english = resultSet.getString(1);
                     russian = resultSet.getString(2);
@@ -96,6 +94,12 @@ public class DictionaryServlet extends HttpServlet {
                     partOfSpeech = resultSet.getString(4);
                     knowledge = resultSet.getInt(5);
                     wordId = resultSet.getInt(6);
+                    otherRussian = resultSet.getString(7);
+                    otherTranscription = resultSet.getString(8);
+                    otherPartOfSpeech = resultSet.getString(9);
+                    if (!otherRussian.equals("")) russian = otherRussian;
+                    if (!otherTranscription.equals("")) transcription = otherTranscription;
+                    if (!otherPartOfSpeech.equals("")) partOfSpeech = otherPartOfSpeech;
                     Word word = new Word();
                     word.setEnglishName(english);
                     word.setRussianName(russian);

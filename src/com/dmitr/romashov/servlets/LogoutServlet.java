@@ -1,4 +1,4 @@
-package com.dmitr.romashov;
+package com.dmitr.romashov.servlets;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;

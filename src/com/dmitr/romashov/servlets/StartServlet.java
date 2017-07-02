@@ -1,4 +1,4 @@
-package com.dmitr.romashov;
+package com.dmitr.romashov.servlets;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -9,7 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
+import com.dmitr.romashov.Person;
 /**
  * Created by Дмитрий on 22.06.2017.
  */
