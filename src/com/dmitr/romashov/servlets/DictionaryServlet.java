@@ -120,6 +120,7 @@ public class DictionaryServlet extends HttpServlet {
         servletContext.setAttribute("loginWordsMap", loginWordsMap);
 
         request.setAttribute("words", words);
+        session.setAttribute("person", person);
         request.getRequestDispatcher("/dictionary.jsp").forward(request, response);
 
     }
