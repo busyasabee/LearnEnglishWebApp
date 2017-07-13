@@ -17,9 +17,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-/**
- * Created by Дмитрий on 21.06.2017.
- */
 @WebServlet(name = "AddWordServlet", urlPatterns = "/addWord")
 public class AddWordServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -35,12 +32,15 @@ public class AddWordServlet extends HttpServlet {
 
         Connection connection = (Connection) servletContext.getAttribute("dbConnection");
         HttpSession session = request.getSession();
-        String login = (String) session.getAttribute("login");
+        Person person = (Person)session.getAttribute("person");
+        int personId = 0;
+        personId = person.getPerson_id();
+        String login = person.getLogin();//(String) session.getAttribute("login");
 
-        if (login == null) {
-            request.getRequestDispatcher("/login.jsp").forward(request, response);
-            return;
-        }
+//        if (login == null) {
+//            request.getRequestDispatcher("/login.jsp").forward(request, response);
+//            return;
+//        }
 
         String englishName = request.getParameter("englishName");
         String russianName = request.getParameter("russianName");
@@ -50,30 +50,29 @@ public class AddWordServlet extends HttpServlet {
         Word newWord = new Word(englishName, russianName, transcription, partOfSpeech, knowledge);
         List<Word> personWords = new ArrayList<>();
         boolean wordExist = false;
-        int personId = 0;
         int wordId = 0;
         boolean wordAdded = false;
 
-        Person person = (Person)session.getAttribute("person");
-        if (person != null){
-            personId = person.getPerson_id();
-        }
-        else {
-            try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
-                    "WHERE login = ? ")) {
 
-                getPersonIdStatement.setString(1, login);
-                try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-                    while ( resultSet.next()){
-                        personId = resultSet.getInt(1);
-                    }
-
-                }
-
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
+//        if (person != null){
+//            personId = person.getPerson_id();
+//        }
+//        else {
+//            try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
+//                    "WHERE login = ? ")) {
+//
+//                getPersonIdStatement.setString(1, login);
+//                try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
+//                    while ( resultSet.next()){
+//                        personId = resultSet.getInt(1);
+//                    }
+//
+//                }
+//
+//            } catch (SQLException e) {
+//                e.printStackTrace();
+//            }
+//        }
 
         out:
         for (String loginKey : loginWordsMap.keySet()) {
@@ -87,7 +86,6 @@ public class AddWordServlet extends HttpServlet {
                     break out;
                 }
             }
-
         }
         try {
 

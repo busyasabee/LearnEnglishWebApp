@@ -18,9 +18,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by Дмитрий on 02.07.2017.
- */
 @WebServlet(name = "DeleteWordServlet", urlPatterns = "/deleteWord")
 public class DeleteWordServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -33,10 +30,10 @@ public class DeleteWordServlet extends HttpServlet {
         ServletContext servletContext = getServletContext();
         Map<String, List<Word>> loginWordsMap = (Map<String, List<Word>>) servletContext.getAttribute("loginWordsMap");
         HttpSession session = request.getSession();
-        String login = (String) session.getAttribute("login");
+        Person person = (Person) session.getAttribute("person");
+        String login = person.getLogin();
         List<Word> words = loginWordsMap.get(login);
         words.removeIf(word -> word.getWordId() == wordId);
-        Person person = (Person) session.getAttribute("person");
         int personId = person.getPerson_id();
         Connection connection = (Connection) servletContext.getAttribute("dbConnection");
 

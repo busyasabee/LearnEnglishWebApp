@@ -2,11 +2,8 @@ package com.dmitr.romashov;
 
 import java.util.Objects;
 
-/**
- * Created by Дмитрий on 11.06.2017.
- */
+
 public class Word implements Comparable{
-    // не знаю, можно ли будет получить не public поля из jsp
     private int wordId;
     private String englishName;
     private String russianName;

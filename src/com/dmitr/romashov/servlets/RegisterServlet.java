@@ -10,39 +10,15 @@ import java.util.Random;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
-
-/**
- * Created by Дмитрий on 05.06.2017.
- */
 @WebServlet(name = "RegisterServlet", urlPatterns = "/register")
 public class RegisterServlet extends HttpServlet {
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        HttpSession session = request.getSession();
+
         String login = request.getParameter("login");
         String password = request.getParameter("password");
-        String role = "";
-        int roleId = 0;
-
-        if (login.equals("admin") && password.equals("admin")) {
-            role = "admin";
-        } else {
-            role = "user";
-        }
-
         ServletContext servletContext = getServletContext();
         Connection connection = (Connection) servletContext.getAttribute("dbConnection");
-
-        try (PreparedStatement findRoleIdStatement = connection.prepareStatement("SELECT id FROM role WHERE role.rolename = ?  ");) {
-            findRoleIdStatement.setString(1, role);
-            try (ResultSet resultSet = findRoleIdStatement.executeQuery();) {
-                resultSet.next();
-                roleId = resultSet.getInt("id");
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
 
         // найти хэш от пароля, сгенерировать соль
 
@@ -56,12 +32,26 @@ public class RegisterServlet extends HttpServlet {
         String saltStr = salt.toString();
         String hashPass = DigestUtils.sha1Hex(password + saltStr);
 
+        try (PreparedStatement checkDublicateStatement = connection.prepareStatement("SELECT FROM person WHERE login = ?")){
+            checkDublicateStatement.setString(1, login);
+            try (ResultSet resultSet = checkDublicateStatement.executeQuery()){
+                if (resultSet.next()){
+                    String error = "Sorry, but the user with this login already exists";
+                    request.setAttribute("error", error);
+                    request.getRequestDispatcher("/register.jsp").forward(request, response);
+                    return;
+                }
 
-        try (PreparedStatement insertPersonStatement = connection.prepareStatement("INSERT INTO person (login, passwordhash, salt, role_id) VALUES (?, ?, ?, ?)  ");) {
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+        try (PreparedStatement insertPersonStatement = connection.prepareStatement("INSERT INTO person (login, passwordhash, salt) VALUES (?, ?, ?)  ")) {
             insertPersonStatement.setString(1, login);
             insertPersonStatement.setString(2, hashPass);
             insertPersonStatement.setString(3, saltStr);
-            insertPersonStatement.setInt(4, roleId);
             insertPersonStatement.executeUpdate();
 
         } catch (Exception e) {

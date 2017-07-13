@@ -22,6 +22,7 @@ public class LogoutServlet extends HttpServlet {
         Cookie cookiePassword = new Cookie("password", "");
         HttpSession session = request.getSession();
         session.setAttribute("login", null);
+        session.setAttribute("person", null);
         cookieLogin.setMaxAge(0);
         cookiePassword.setMaxAge(0);
         response.addCookie(cookieLogin);

@@ -18,9 +18,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-/**
- * Created by Дмитрий on 07.05.2017.
- */
+
 @WebServlet("/learnwords")
 public class LearnWordsServlet extends HttpServlet {
     private static int wordMemory = 0;
@@ -38,13 +36,16 @@ public class LearnWordsServlet extends HttpServlet {
         int personId = 0;
         int wordId = 0;
         int maxTaskNumber = 2;
+        String isChecked = "no";
 
         taskNumber = (int) session.getAttribute("taskNumber");
         wordNumber = (int) session.getAttribute("wordNumber");
         trainingWords = (List<Word>) session.getAttribute("trainingWords");
+        isChecked = (String) session.getAttribute("isChecked");
+
         Word trainingWord = trainingWords.get(wordNumber);
         String rightAnswer = "";
-        String login = (String) session.getAttribute("login");
+        //String login = (String) session.getAttribute("login");
 
         switch (taskNumber) {
             case 0:
@@ -56,53 +57,45 @@ public class LearnWordsServlet extends HttpServlet {
         }
 
         String answer = request.getParameter("answer");
-
         Enumeration fields = request.getParameterNames();
+
         if (fields.hasMoreElements()) {
             while (fields.hasMoreElements()) {
                 String field = (String) fields.nextElement();
-                //String name = request.getParameter(field);
                 if (field.equals("check")) {
-                    if (rightAnswer.equals(answer)) {
-                        trainingWord.setKnowledge(trainingWord.getKnowledge() + 1);
-                        Person person = (Person) session.getAttribute("person");
-                        if (person != null) {
+                    if(isChecked == null || isChecked.equals("no")){
+                        if (rightAnswer.equals(answer)) {
+                            trainingWord.setKnowledge(trainingWord.getKnowledge() + 1);
+                            Person person = (Person) session.getAttribute("person");
                             personId = person.getPerson_id();
-                        } else {
-                            try (PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
-                                    "WHERE login = ? ")) {
+                            wordId = trainingWord.getWordId();
 
-                                getPersonIdStatement.setString(1, login);
-                                try (ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-                                    while (resultSet.next()) {
-                                        personId = resultSet.getInt(1);
-                                    }
+                            try (PreparedStatement insertPersonWordStatement
+                                         = connection.prepareStatement("UPDATE person_word SET knowledge = ? WHERE person_id = ? and word_id = ?")) {
 
-                                }
+                                insertPersonWordStatement.setInt(1, trainingWord.getKnowledge());
+                                insertPersonWordStatement.setInt(2, personId);
+                                insertPersonWordStatement.setInt(3, wordId);
+                                insertPersonWordStatement.executeUpdate();
 
-                            } catch (SQLException e) {
+                            } catch (Exception e) {
                                 e.printStackTrace();
                             }
+                            request.setAttribute("isRight", "yes");
+                        } else {
+                            request.setAttribute("isRight", "no");
                         }
 
-                        wordId = trainingWord.getWordId();
-                        session.setAttribute("person", new Person(login, personId));
+                        session.setAttribute("isChecked", "yes");
 
-                        try (PreparedStatement insertPersonWordStatement
-                                     = connection.prepareStatement("UPDATE person_word SET knowledge = ? WHERE person_id = ? and word_id = ?")) {
-
-                            insertPersonWordStatement.setInt(1, trainingWord.getKnowledge());
-                            insertPersonWordStatement.setInt(2, personId);
-                            insertPersonWordStatement.setInt(3, wordId);
-                            insertPersonWordStatement.executeUpdate();
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                    }
+                    else {
+                        if (rightAnswer.equals(answer)) {
+                            request.setAttribute("isRight", "yes");
                         }
-                        request.setAttribute("isRight", "yes");
-
-                    } else {
-                        request.setAttribute("isRight", "no");
+                        else {
+                            request.setAttribute("isRight", "no");
+                        }
                     }
 
                     request.getRequestDispatcher("/words.jsp").forward(request, response);
@@ -116,7 +109,8 @@ public class LearnWordsServlet extends HttpServlet {
 
                     session.setAttribute("wordNumber", wordNumber);
                     session.setAttribute("taskNumber", taskNumber);
-                    //response.sendRedirect("/words.jsp");
+                    session.setAttribute("isChecked", "no");
+
                     if (taskNumber >= maxTaskNumber) {
                         request.setAttribute("words", trainingWords);
                         request.getRequestDispatcher("/wordsTrained.jsp").forward(request, response);
@@ -145,37 +139,39 @@ public class LearnWordsServlet extends HttpServlet {
         Connection connection = (Connection) servletContext.getAttribute("dbConnection");
         HttpSession session = request.getSession();
 
-        String login = (String) session.getAttribute("login");
+        String login = "";
         int personId = 0;
 
-        if (login == null) {
-            request.getRequestDispatcher("/login.jsp").forward(request, response);
-            return;
-        }
+//        if (login == null) {
+//            request.getRequestDispatcher("/login.jsp").forward(request, response);
+//            return;
+//        }
 
         if (servletContext.getAttribute("loginWordsMap") != null) {
             loginWordsMap = (HashMap<String, List<Word>>) servletContext.getAttribute("loginWordsMap");
         }
 
         Person person = (Person) session.getAttribute("person");
-        if (person != null) {
-            personId = person.getPerson_id();
-        } else {
-            try (PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
-                    "WHERE login = ? ")) {
-
-                getPersonIdStatement.setString(1, login);
-                try (ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-                    while (resultSet.next()) {
-                        personId = resultSet.getInt(1);
-                    }
-
-                }
-
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
+        personId = person.getPerson_id();
+        login = person.getLogin();
+//        if (person != null) {
+//            personId = person.getPerson_id();
+//        } else {
+//            try (PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
+//                    "WHERE login = ? ")) {
+//
+//                getPersonIdStatement.setString(1, login);
+//                try (ResultSet resultSet = getPersonIdStatement.executeQuery()) {
+//                    while (resultSet.next()) {
+//                        personId = resultSet.getInt(1);
+//                    }
+//
+//                }
+//
+//            } catch (SQLException e) {
+//                e.printStackTrace();
+//            }
+//        }
 
         try {
             if (loginWordsMap.containsKey(login)) {
@@ -225,7 +221,8 @@ public class LearnWordsServlet extends HttpServlet {
         session.setAttribute("trainingWords", trainingWords);
         session.setAttribute("wordNumber", wordNumber);
         session.setAttribute("taskNumber", taskNumber);
-        response.sendRedirect("/words.jsp");
+        request.getRequestDispatcher("/words.jsp").forward(request, response);
+        //response.sendRedirect("/words.jsp");
 
     }
 }

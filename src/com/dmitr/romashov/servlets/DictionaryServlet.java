@@ -2,8 +2,6 @@ package com.dmitr.romashov.servlets;
 
 import com.dmitr.romashov.Person;
 import com.dmitr.romashov.Word;
-import org.postgresql.jdbc.PgArray;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -21,9 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by Дмитрий on 09.06.2017.
- */
+
 @WebServlet(name = "DictionaryServlet", urlPatterns = "/dict")
 public class DictionaryServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -43,15 +39,10 @@ public class DictionaryServlet extends HttpServlet {
             loginWordsMap = (HashMap<String, List<Word>>)servletContext.getAttribute("loginWordsMap");
 
         }
+        Person person = (Person) session.getAttribute("person");
 
-        String login = (String)session.getAttribute("login");
+        String login = person.getLogin();
         int personId = 0;
-
-        if (login == null){
-
-            request.getRequestDispatcher("/login.jsp").forward(request, response);
-            return;
-        }
 
         if(loginWordsMap.containsKey(login)){
             request.setAttribute("words", loginWordsMap.get(login));
@@ -59,27 +50,7 @@ public class DictionaryServlet extends HttpServlet {
             return;
         }
 
-
-        Person person = (Person)session.getAttribute("person");
-        if (person != null){
-            personId = person.getPerson_id();
-        }
-        else {
-            try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
-                    "WHERE login = ? ")) {
-
-                getPersonIdStatement.setString(1, login);
-                try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-                    while ( resultSet.next()){
-                        personId = resultSet.getInt(1);
-                    }
-
-                }
-
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
+        personId = (int)session.getAttribute("personId");
 
         try (PreparedStatement selectWordsStatement = connection.prepareStatement("SELECT englishname, russianname, transcription, partofspeech, knowledge, id, other_russian_name, other_transcription, other_part_of_speech" +
                 " FROM word JOIN person_word on word.id = person_word.word_id WHERE person_word.person_id = ?");) {
@@ -100,19 +71,12 @@ public class DictionaryServlet extends HttpServlet {
                     if (!otherRussian.equals("")) russian = otherRussian;
                     if (!otherTranscription.equals("")) transcription = otherTranscription;
                     if (!otherPartOfSpeech.equals("")) partOfSpeech = otherPartOfSpeech;
-                    Word word = new Word();
-                    word.setEnglishName(english);
-                    word.setRussianName(russian);
-                    word.setTranscription(transcription);
-                    word.setPartOfSpeech(partOfSpeech);
-                    word.setKnowledge(knowledge);
-                    word.setWordId(wordId);
+                    Word word = new Word(wordId, english, russian, knowledge, transcription, partOfSpeech);
                     words.add(word);
                 }
             }
 
         } catch (SQLException e) {
-            System.out.println("Error with query");
             e.printStackTrace();
         }
 
@@ -120,7 +84,6 @@ public class DictionaryServlet extends HttpServlet {
         servletContext.setAttribute("loginWordsMap", loginWordsMap);
 
         request.setAttribute("words", words);
-        session.setAttribute("person", person);
         request.getRequestDispatcher("/dictionary.jsp").forward(request, response);
 
     }

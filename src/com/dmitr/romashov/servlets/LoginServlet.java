@@ -25,7 +25,6 @@ public class LoginServlet extends HttpServlet {
         HttpSession session = request.getSession();
         String login = request.getParameter("login");
         String password = request.getParameter("password");
-        String sessionId = session.getId();
 
         // подключиться к бд, проверить, есть ли такой пользователь
         ServletContext servletContext = getServletContext();
@@ -35,7 +34,6 @@ public class LoginServlet extends HttpServlet {
         String hashPass = "";
         boolean isLogged = true;
         int personId = 0;
-
 
         try (PreparedStatement selectUserStatement = connection.prepareStatement("SELECT id, passwordhash, salt FROM person WHERE login = ?  ");) {
             selectUserStatement.setString(1, login);
@@ -59,12 +57,12 @@ public class LoginServlet extends HttpServlet {
 
         if (hashPass.equals(passwordFromDb)){
             Person person = new Person(login, personId);
-            Cookie cookieLogin = new Cookie("login", login);
-            cookieLogin.setMaxAge(cookiesTime);
-            Cookie cookiePassword = new Cookie("password", password);
+            Cookie cookiePersonId = new Cookie("id", Integer.toString(personId));
+            cookiePersonId.setMaxAge(cookiesTime);
+            Cookie cookiePassword = new Cookie("password", hashPass);
             cookiePassword.setMaxAge(cookiesTime);
 
-            response.addCookie(cookieLogin);
+            response.addCookie(cookiePersonId);
             response.addCookie(cookiePassword);
             session.setAttribute("login", login);
             session.setAttribute("person", person);

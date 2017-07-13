@@ -18,9 +18,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by Дмитрий on 29.06.2017.
- */
 @WebServlet(name = "EditWordServlet", urlPatterns = "/editWord")
 public class EditWordServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -40,32 +37,12 @@ public class EditWordServlet extends HttpServlet {
         Map<String, List<Word>> loginWordsMap = (Map<String, List<Word>>) servletContext.getAttribute("loginWordsMap");
         Connection connection = (Connection) servletContext.getAttribute("dbConnection");
         HttpSession session = request.getSession();
-        String login = (String) session.getAttribute("login");
         Person person = (Person) session.getAttribute("person");
+        String login = person.getLogin();
         int personId = 0;
+        personId = person.getPerson_id();
         int wordId = 0;
         boolean isWordExist = false;
-
-        if (person != null){
-            personId = person.getPerson_id();
-        }
-        else {
-            try(PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
-                    "WHERE login = ? ")) {
-
-                getPersonIdStatement.setString(1, login);
-                try(ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-                    while ( resultSet.next()){
-                        personId = resultSet.getInt(1);
-                    }
-
-                }
-
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-
 
         for (Word word: loginWordsMap.get(login)) {
             if (newEnglishName.equals(word.getEnglishName()) && newRussianName.equals(word.getRussianName())){
@@ -83,19 +60,6 @@ public class EditWordServlet extends HttpServlet {
         }
 
         if (isWordExist){
-            try (PreparedStatement updateWordStatement = connection.prepareStatement("UPDATE word SET transcription =" +
-                    "?, partofspeech = ? WHERE word.id = ?")){
-
-                updateWordStatement.setString(1, newTranscription);
-                updateWordStatement.setString(2, newPartOfSpeech);
-                updateWordStatement.setInt(3, wordId);
-                updateWordStatement.executeUpdate();
-
-            } catch (SQLException e) {
-                // добавить сообщение об ошибке
-                e.printStackTrace();
-            }
-
             try (PreparedStatement updatePersonWordStatement = connection.prepareStatement("UPDATE person_word SET " +
                     "other_transcription = ?, other_part_of_speech = ? WHERE word_id = ? AND person_id = ?")){
                 updatePersonWordStatement.setString(1, newTranscription);
@@ -105,7 +69,6 @@ public class EditWordServlet extends HttpServlet {
                 updatePersonWordStatement.executeUpdate();
 
             } catch (SQLException e) {
-                // добавить сообщение об ошибке
                 e.printStackTrace();
             }
 
@@ -141,6 +104,27 @@ public class EditWordServlet extends HttpServlet {
                 e.printStackTrace();
             }
 
+            // удаляем слово, если его больше никто не использует
+
+            try (PreparedStatement selectRecordsWithWordStatement = connection.prepareStatement("SELECT person_id, word_id " +
+                    "FROM person_word WHERE word_id = ?")){
+                selectRecordsWithWordStatement.setInt(1, oldWordId);
+                try (ResultSet resultSet = selectRecordsWithWordStatement.executeQuery()){
+                    if (!resultSet.next()){
+                        try (PreparedStatement deleteWordStatement = connection.prepareStatement("DELETE FROM word WHERE " +
+                                "word.id = ?")){
+                            deleteWordStatement.setInt(1, oldWordId);
+                            deleteWordStatement.executeUpdate();
+
+                        }
+                    }
+
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
             List<Word> personWords = loginWordsMap.get(login);
             personWords.removeIf( p -> p.getWordId() == oldWordId);
             personWords.add(newWord);
@@ -156,7 +140,8 @@ public class EditWordServlet extends HttpServlet {
         ServletContext servletContext = getServletContext();
         int wordId = Integer.parseInt(request.getParameter("id"));
         HttpSession session = request.getSession();
-        String login = (String) session.getAttribute("login");
+        Person person = (Person) session.getAttribute("person");
+        String login = person.getLogin();
         Map<String, List<Word>> loginWordsMap =  (Map<String, List<Word>> )servletContext.getAttribute("loginWordsMap");
         Word editedWord = new Word();
 

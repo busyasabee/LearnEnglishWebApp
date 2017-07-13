@@ -2,9 +2,6 @@ package com.dmitr.romashov;
 
 import java.util.Objects;
 
-/**
- * Created by Дмитрий on 20.06.2017.
- */
 public class Person {
     private String login;
     private int person_id;
