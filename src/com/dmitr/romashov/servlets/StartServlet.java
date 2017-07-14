@@ -10,9 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import com.dmitr.romashov.Person;
-/**
- * Created by Дмитрий on 22.06.2017.
- */
+
 @WebServlet(name = "StartServlet", urlPatterns = "/start")
 public class StartServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

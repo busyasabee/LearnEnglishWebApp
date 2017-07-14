@@ -6,9 +6,7 @@ import javax.servlet.http.*;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-/**
- * Created by Дмитрий on 04.06.2017.
- */
+
 @WebServlet(name = "LogoutServlet", urlPatterns = "/logout")
 public class LogoutServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -17,7 +15,6 @@ public class LogoutServlet extends HttpServlet {
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-        Cookie[] cookies = request.getCookies();
         Cookie cookieLogin = new Cookie("login", "");
         Cookie cookiePassword = new Cookie("password", "");
         HttpSession session = request.getSession();

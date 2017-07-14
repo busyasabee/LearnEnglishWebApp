@@ -14,9 +14,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/**
- * Created by Дмитрий on 02.06.2017.
- */
+
 @WebServlet(name = "loginServlet", urlPatterns = "/loginServlet")
 public class LoginServlet extends HttpServlet {
     int cookiesTime = 2_592_000; // month
@@ -32,7 +30,6 @@ public class LoginServlet extends HttpServlet {
         String passwordFromDb = "";
         String saltFromDb = "";
         String hashPass = "";
-        boolean isLogged = true;
         int personId = 0;
 
         try (PreparedStatement selectUserStatement = connection.prepareStatement("SELECT id, passwordhash, salt FROM person WHERE login = ?  ");) {
@@ -70,7 +67,6 @@ public class LoginServlet extends HttpServlet {
 
         }
         else {
-            isLogged = false;
             request.setAttribute("errorHappen", "yes");
             request.getRequestDispatcher("/login.jsp").forward(request, response);
         }

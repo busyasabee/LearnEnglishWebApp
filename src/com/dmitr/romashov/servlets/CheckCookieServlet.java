@@ -50,7 +50,6 @@ public class CheckCookieServlet extends HttpServlet {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        int t = 3;
 
     }
 }

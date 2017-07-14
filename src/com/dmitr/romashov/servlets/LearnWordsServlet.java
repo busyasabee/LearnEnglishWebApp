@@ -45,7 +45,6 @@ public class LearnWordsServlet extends HttpServlet {
 
         Word trainingWord = trainingWords.get(wordNumber);
         String rightAnswer = "";
-        //String login = (String) session.getAttribute("login");
 
         switch (taskNumber) {
             case 0:
@@ -130,7 +129,7 @@ public class LearnWordsServlet extends HttpServlet {
         int taskNumber = 0;
         int wordNumber = 0;
         int numberTrainingWords = 5;
-        boolean firstTime = true; // надо получить слова
+        boolean firstTime = true;
         List<Word> trainingWords = new ArrayList<>();
         List<Word> allPersonWords = new ArrayList<>();
         int allWordsCount = 0;
@@ -142,11 +141,6 @@ public class LearnWordsServlet extends HttpServlet {
         String login = "";
         int personId = 0;
 
-//        if (login == null) {
-//            request.getRequestDispatcher("/login.jsp").forward(request, response);
-//            return;
-//        }
-
         if (servletContext.getAttribute("loginWordsMap") != null) {
             loginWordsMap = (HashMap<String, List<Word>>) servletContext.getAttribute("loginWordsMap");
         }
@@ -154,24 +148,6 @@ public class LearnWordsServlet extends HttpServlet {
         Person person = (Person) session.getAttribute("person");
         personId = person.getPerson_id();
         login = person.getLogin();
-//        if (person != null) {
-//            personId = person.getPerson_id();
-//        } else {
-//            try (PreparedStatement getPersonIdStatement = connection.prepareStatement("SELECT person.id from person " +
-//                    "WHERE login = ? ")) {
-//
-//                getPersonIdStatement.setString(1, login);
-//                try (ResultSet resultSet = getPersonIdStatement.executeQuery()) {
-//                    while (resultSet.next()) {
-//                        personId = resultSet.getInt(1);
-//                    }
-//
-//                }
-//
-//            } catch (SQLException e) {
-//                e.printStackTrace();
-//            }
-//        }
 
         try {
             if (loginWordsMap.containsKey(login)) {
@@ -188,6 +164,7 @@ public class LearnWordsServlet extends HttpServlet {
 
 
             } else {
+
                 // делаем sql запрос, получаем слова
 
                 try (PreparedStatement selectWordsStatement = connection.prepareStatement("SELECT englishname, russianname, transcription, partofspeech, knowledge, id" +
@@ -222,7 +199,6 @@ public class LearnWordsServlet extends HttpServlet {
         session.setAttribute("wordNumber", wordNumber);
         session.setAttribute("taskNumber", taskNumber);
         request.getRequestDispatcher("/words.jsp").forward(request, response);
-        //response.sendRedirect("/words.jsp");
 
     }
 }
