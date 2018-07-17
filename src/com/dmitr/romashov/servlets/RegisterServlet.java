@@ -41,7 +41,6 @@ public class RegisterServlet extends HttpServlet {
                     request.getRequestDispatcher("/register.jsp").forward(request, response);
                     return;
                 }
-
             }
         } catch (SQLException e) {
             e.printStackTrace();
