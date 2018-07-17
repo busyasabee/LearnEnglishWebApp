@@ -34,7 +34,7 @@ public class LoginServlet extends HttpServlet {
 
         try (PreparedStatement selectUserStatement = connection.prepareStatement("SELECT id, passwordhash, salt FROM person WHERE login = ?  ");) {
             selectUserStatement.setString(1, login);
-            try (ResultSet resultSet = selectUserStatement.executeQuery();) {
+            try (ResultSet resultSet = selectUserStatement.executeQuery()) {
                 resultSet.next();
                 personId = resultSet.getInt("id");
                 passwordFromDb = resultSet.getString("passwordhash");
